@@ -37,7 +37,6 @@ def test_users_no_duplicates(users):
 ])
 def test_users_list_pagination(users_api_class, page, size):
     response = users_api_class.get_users(page=page, size=size)
-    print(response.json())
     all_users_list = users_api_class.get_users()
     response_page_1 = users_api_class.get_users(page=1, size=6)
     response_page_2 = users_api_class.get_users(page=2, size=6)
