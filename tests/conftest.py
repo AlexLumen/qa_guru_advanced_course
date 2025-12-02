@@ -4,15 +4,37 @@ from http import HTTPStatus
 
 import dotenv
 import pytest
-import requests
 from mimesis import Person, Internet
 
-from tests.clients import create_user, delete_user, get_users
+from clients.StatusApi import StatusApi
+from clients.UsersApi import UsersApi
+
+
+@pytest.fixture(scope="session")
+def users_api_class(get_env):
+    return UsersApi(get_env)
+
+@pytest.fixture(scope="session")
+def status_api_class(get_env):
+    return StatusApi(get_env)
 
 
 @pytest.fixture(autouse=True)
 def envs():
     dotenv.load_dotenv()
+
+
+
+def pytest_addoption(parser):
+    """
+    Add options to pytest
+    """
+    parser.addoption("--env", default="dev")
+
+
+@pytest.fixture(scope="session")
+def get_env(request):
+    return request.config.getoption("--env")
 
 
 @pytest.fixture
@@ -21,19 +43,19 @@ def app_url():
 
 
 @pytest.fixture(scope="module")
-def fill_test_data(app_url):
+def fill_test_data(users_api_class):
     with open("users.json") as f:
         test_data_users = json.load(f)
     api_users = []
     for user in test_data_users:
-        response = requests.post(f"{app_url}/api/users", json=user)
+        response = users_api_class.create_user(user)
         api_users.append(response.json())
     user_ids = [user["id"] for user in api_users]
 
     yield user_ids
 
     for user_id in user_ids:
-        requests.delete(f"{app_url}/api/users/{user_id}")
+        users_api_class.delete_user(user_id)
 
 @pytest.fixture()
 def person_generator():
@@ -79,13 +101,13 @@ def user_data_for_edit(person_generator, internet_data_generator):
     return data
 
 @pytest.fixture()
-def create_new_user(app_url,user_data, request):
+def create_new_user(users_api_class,user_data, request):
     """
     Фикстура создания пользователя
     """
-    response = create_user(app_url, user_data)
+    response = users_api_class.create_user(user_data)
     def teardown():
-       delete_user(app_url, response.json()['id'])
+        users_api_class.delete_user(response.json()['id'])
 
     request.addfinalizer(teardown)
     return response
@@ -93,7 +115,7 @@ def create_new_user(app_url,user_data, request):
 
 
 @pytest.fixture
-def users(app_url):
-    response = get_users(app_url)
+def users(users_api_class):
+    response = users_api_class.get_users()
     assert response.status_code == HTTPStatus.OK
     return response.json()

@@ -5,12 +5,11 @@ import allure
 import pytest
 
 from app.models.User import User
-from tests.clients import get_users
 
 
 @allure.title("Тест списка пользователей")
-def test_users(app_url):
-    response = get_users(app_url)
+def test_users(users_api_class):
+    response = users_api_class.get_users()
     assert response.status_code == HTTPStatus.OK
 
     users = response.json()['items']
@@ -36,12 +35,12 @@ def test_users_no_duplicates(users):
     (1, 13),
     (25, 5)
 ])
-def test_users_list_pagination(app_url, page, size):
-    response = get_users(app_url, params={"page": page, "size": size})
+def test_users_list_pagination(users_api_class, page, size):
+    response = users_api_class.get_users(page=page, size=size)
     print(response.json())
-    all_users_list = get_users(app_url)
-    response_page_1 = get_users(app_url, params={"page": 1, "size": 6})
-    response_page_2 = get_users(app_url, params={"page": 2, "size": 6})
+    all_users_list = users_api_class.get_users()
+    response_page_1 = users_api_class.get_users(page=1, size=6)
+    response_page_2 = users_api_class.get_users(page=2, size=6)
 
     total_users = len(all_users_list.json()['items'])
     start = (page - 1) * size
