@@ -1,9 +1,10 @@
 from http import HTTPStatus
 import allure
-import requests
+from tests.clients import status
+
 
 @allure.title("Проверить, что приложение запущено")
 def test_status_app(app_url):
-    response = requests.get(f"{app_url}/status")
+    response = status(app_url)
     assert response.status_code == HTTPStatus.OK
-    assert response.json()['users'] == True
+    assert response.json()['database'] == True
